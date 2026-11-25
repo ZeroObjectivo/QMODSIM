@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ThemeMode } from '../types/simulation';
 
-const STORAGE_KEY = 'aegis-er-theme';
+const STORAGE_KEY = 'old-yorkers-qmodsim-theme';
 
 export function useTheme(): { theme: ThemeMode; toggleTheme: () => void } {
   const [theme, setTheme] = useState<ThemeMode>(() => {

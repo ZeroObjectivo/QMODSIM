@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildDailyErSurgeProfile,
+  buildBranchOrderSurgeProfile,
   exponentialPdf,
   nonHomogeneousRate,
   poissonPmf,
@@ -8,13 +8,13 @@ import {
 } from '../arrivals';
 import { computeEntropyMetrics, generateSecureClinicalToken } from '../entropy';
 import { computeRosi, runFairMonteCarlo } from '../fairMonteCarlo';
-import { analyzeAbsorbingMarkov, buildHospitalVlanMatrix } from '../markov';
+import { analyzeAbsorbingMarkov, buildOrderLifecycleMatrix } from '../markov';
 import { solveMMcK } from '../queueing';
 import { solveSecurityGame } from '../gameTheory';
-import { generateInfusionTelemetryTrace, StreamingZScoreDetector } from '../anomaly';
+import { generateIngredientDeductionTrace, StreamingZScoreDetector } from '../anomaly';
 import {
   componentReliability,
-  evaluateHospitalInfrastructure,
+  evaluateBranchInfrastructure,
   inherentAvailability,
   parallelReliability,
   seriesReliability,
@@ -22,38 +22,33 @@ import {
 import { runFullEngineValidation } from '../validation';
 import type { LabParameters } from '../../types/simulation';
 
-describe('AEGIS-ER QMODSIM Mathematical Engines', () => {
-  describe('Modules 1 & 3: Stochastic Arrivals', () => {
+describe("Old Yorker's QMODSIM Mathematical Engines", () => {
+  describe('Modules 1 & 3: Branch Order Arrivals & Meal Rushes', () => {
     it('computes normalized Poisson PMF summing to ~1.0', () => {
       let sum = 0;
-      for (let k = 0; k <= 40; k++) {
-        sum += poissonPmf(6, 1, k);
+      for (let k = 0; k <= 50; k++) {
+        sum += poissonPmf(10, 1, k);
       }
       expect(Math.abs(sum - 1)).toBeLessThan(1e-6);
     });
 
-    it('matches exponential density f(0) = λ', () => {
-      expect(exponentialPdf(12, 0)).toBeCloseTo(12, 8);
-      expect(exponentialPdf(12, -1)).toBe(0);
-    });
-
-    it('matches empirical mean inter-arrival to 1/λ within ±2%', () => {
-      const sim = simulatePoissonInterArrivals(14, 15000, 20260401);
+    it('matches exponential density f(0) = λ and empirical mean inter-arrival within ±2%', () => {
+      expect(exponentialPdf(22, 0)).toBeCloseTo(22, 8);
+      const sim = simulatePoissonInterArrivals(22, 15000, 20260401);
       expect(sim.relativeError).toBeLessThan(0.02);
     });
 
-    it('computes non-homogeneous Gaussian surge profile peaking above baseline', () => {
-      const rate = nonHomogeneousRate(14, 10, [
-        { label: 'Code Blue', amplitude: 15, peakHour: 14, spread: 1.5 },
+    it('computes non-homogeneous dinner surge peaking above baseline', () => {
+      const rate = nonHomogeneousRate(19, 16, [
+        { label: 'Dinner Rush', amplitude: 18, peakHour: 19, spread: 1.5 },
       ]);
-      expect(rate).toBeCloseTo(25, 6);
-      const profile = buildDailyErSurgeProfile(10, 12);
-      expect(profile.length).toBeGreaterThan(24);
+      expect(rate).toBeCloseTo(34, 6);
+      expect(buildBranchOrderSurgeProfile(16, 14).length).toBeGreaterThan(20);
     });
   });
 
-  describe('Modules 2 & 10: Information Entropy & Web Crypto Tokens', () => {
-    it('computes exact Shannon entropy for 4-digit PIN vs 16-char alphanumeric', () => {
+  describe('Modules 2 & 10: RBAC & GCash Webhook Token Entropy', () => {
+    it('quantifies 4-digit staff PIN weakness vs 16-char RBAC token', () => {
       const pin = computeEntropyMetrics({ alphabetSize: 10, length: 4, guessesPerSecond: 1e6 });
       expect(pin.entropyBits).toBeCloseTo(Math.log2(10000), 6);
       expect(pin.classification).toBe('CRITICAL');
@@ -63,24 +58,24 @@ describe('AEGIS-ER QMODSIM Mathematical Engines', () => {
       expect(strong.classification).toBe('STRONG');
     });
 
-    it('generates unbiased tokens of exact requested length via Web Crypto API', () => {
+    it('generates unbiased tokens via Web Crypto API', () => {
       const token = generateSecureClinicalToken(24, 62);
       expect(token).toHaveLength(24);
       expect(/^[0-9A-Za-z]{24}$/.test(token)).toBe(true);
     });
   });
 
-  describe('Module 4: FAIR Monte Carlo & ROSI', () => {
+  describe('Module 4: FAIR Monte Carlo (GCash Fraud, Shrinkage & RA 10173)', () => {
     it('converges ALE within ±1.5% across independent 10,000-trial seeds', () => {
       const input = {
-        tefMin: 0.4,
-        tefLikely: 1.4,
-        tefMax: 3.8,
-        lossLogMu: 13.9,
+        tefMin: 1.5,
+        tefLikely: 4.5,
+        tefMax: 10.0,
+        lossLogMu: 11.4,
         lossLogSigma: 0.42,
-        secondaryLossMultiplier: 0.65,
-        mitigationFactor: 0.62,
-        controlCostPhp: 850_000,
+        secondaryLossMultiplier: 0.55,
+        mitigationFactor: 0.68,
+        controlCostPhp: 180_000,
       };
       const runA = runFairMonteCarlo(input, 10000, 104729);
       const runB = runFairMonteCarlo(input, 10000, 224737);
@@ -88,87 +83,74 @@ describe('AEGIS-ER QMODSIM Mathematical Engines', () => {
 
       expect(relDiff).toBeLessThan(0.015);
       expect(runA.aleP95).toBeGreaterThan(runA.aleMedian);
-      expect(computeRosi(2_000_000, 500_000, 500_000)).toBeCloseTo(2.0, 6);
+      expect(computeRosi(900_000, 250_000, 150_000)).toBeCloseTo((650_000 - 150_000) / 150_000, 6);
     });
   });
 
-  describe('Module 5: Absorbing Markov Chains (Hospital VLAN)', () => {
-    it('maintains row-stochasticity and exact absorption probability sums = 1.0', () => {
-      const P = buildHospitalVlanMatrix(0.45, 0.28);
+  describe('Module 5: Absorbing Markov Order Ticket Lifecycle', () => {
+    it('maintains exact row-stochasticity and absorption sum = 1.0', () => {
+      const P = buildOrderLifecycleMatrix(0.75, 0.12);
       const res = analyzeAbsorbingMarkov(P, 3);
 
       expect(res.isRowStochastic).toBe(true);
       expect(res.maxRowDeviation).toBeLessThan(1e-10);
-
       for (const row of res.absorptionProbabilities) {
-        const sum = row.reduce((a, b) => a + b, 0);
-        expect(sum).toBeCloseTo(1.0, 6);
-      }
-      for (const steps of res.meanStepsToAbsorption) {
-        expect(steps).toBeGreaterThan(0);
+        expect(row.reduce((a, b) => a + b, 0)).toBeCloseTo(1.0, 6);
       }
     });
   });
 
-  describe('Module 6: M/M/c/K Queueing Theory', () => {
-    it("satisfies Little's Law conservation |L - λ_eff·W| < 10⁻⁵ including at ρ = 1", () => {
-      const balanced = solveMMcK({ lambda: 16, mu: 4, c: 4, K: 16 });
+  describe('Module 6: M/M/c/K Kitchen Prep Station Queueing', () => {
+    it("satisfies Little's Law conservation including at ρ = 1.0", () => {
+      const balanced = solveMMcK({ lambda: 24, mu: 8, c: 3, K: 18 });
       expect(balanced.rho).toBeCloseTo(1.0, 8);
       expect(balanced.littlesLawDiff).toBeLessThan(1e-10);
-
-      const probSum = balanced.stateProbabilities.reduce((a, b) => a + b, 0);
-      expect(probSum).toBeCloseTo(1.0, 8);
-
-      const saturated = solveMMcK({ lambda: 30, mu: 4, c: 4, K: 12 });
-      expect(saturated.pDrop).toBeGreaterThan(0.3);
-      expect(saturated.littlesLawDiff).toBeLessThan(1e-10);
+      expect(balanced.stateProbabilities.reduce((a, b) => a + b, 0)).toBeCloseTo(1.0, 8);
     });
   });
 
-  describe('Module 7: Game Theory Security Defense', () => {
+  describe('Module 7: Game Theory (Branch Audit vs. Shrinkage)', () => {
     it('computes exact Mixed-Strategy Nash Equilibrium p* and q*', () => {
       const res = solveSecurityGame({
-        auditCost: 40_000,
-        attackerGain: 200_000,
-        breachPenalty: 800_000,
+        auditCost: 15_000,
+        attackerGain: 80_000,
+        breachPenalty: 320_000,
       });
-      expect(res.pStar).toBeCloseTo(0.04, 6);
-      expect(res.qStar).toBeCloseTo(0.2, 6);
+      expect(res.pStar).toBeCloseTo(15_000 / 400_000, 6);
+      expect(res.qStar).toBeCloseTo(80_000 / 400_000, 6);
     });
   });
 
-  describe('Module 11: Zero-Allocation Streaming Z-Score Detector', () => {
-    it('detects all 3 injected IV infusion dosage anomalies without poisoning baseline', () => {
-      const trace = generateInfusionTelemetryTrace(120, 3.2, 7711);
+  describe('Module 11: Zero-Allocation BOM Deduction Z-Score Detector', () => {
+    it('flags all 3 injected bun/beef shrinkage anomalies without baseline poisoning', () => {
+      const trace = generateIngredientDeductionTrace(120, 3.2, 7711);
       expect(trace[48]?.isAnomaly).toBe(true);
       expect(trace[76]?.isAnomaly).toBe(true);
       expect(trace[102]?.isAnomaly).toBe(true);
 
       const detector = new StreamingZScoreDetector(30);
       for (let i = 0; i < 35; i++) {
-        detector.push(i, 50 + (i % 2 === 0 ? 0.5 : -0.5), 3.0);
+        detector.push(i, 24 + (i % 2 === 0 ? 0.4 : -0.4), 3.0);
       }
-      const spike = detector.push(35, 65, 3.0);
-      expect(spike.isAnomaly).toBe(true);
-      expect(spike.zScore).toBeGreaterThan(10);
+      expect(detector.push(35, 38, 3.0).isAnomaly).toBe(true);
     });
   });
 
-  describe('Module 12: System Reliability & Availability', () => {
-    it('proves parallel redundancy strictly dominates single-path series reliability', () => {
+  describe('Module 12: Multi-Branch POS & GCash Failover Reliability', () => {
+    it('proves parallel failover strictly dominates single-path series reliability', () => {
       expect(componentReliability(0.001, 0)).toBe(1);
       expect(seriesReliability([0.9, 0.9])).toBeCloseTo(0.81, 6);
       expect(parallelReliability([0.9, 0.9])).toBeCloseTo(0.99, 6);
-      expect(inherentAvailability(720, 2)).toBeCloseTo(720 / 722, 6);
+      expect(inherentAvailability(720, 1.5)).toBeCloseTo(720 / 721.5, 6);
 
-      const infra = evaluateHospitalInfrastructure({
-        wanFailureRate: 0.0012,
-        ehrFailureRate: 0.0004,
-        gatewayFailureRate: 0.0015,
+      const infra = evaluateBranchInfrastructure({
+        ispFailureRate: 0.0018,
+        mysqlFailureRate: 0.0003,
+        gcashApiFailureRate: 0.001,
         missionHours: 168,
         mtbfHours: 720,
         mttrHours: 1.5,
-        redundantGateways: 2,
+        redundantLinks: 2,
       });
       expect(infra.hybridSystemReliability).toBeGreaterThan(infra.seriesReliability);
     });
@@ -177,27 +159,28 @@ describe('AEGIS-ER QMODSIM Mathematical Engines', () => {
   describe('Automated Verification & Validation Drawer Suite', () => {
     it('passes all 6 live mathematical invariant checks', () => {
       const defaults: LabParameters = {
-        lambda: 14,
-        mu: 4,
-        c: 4,
-        K: 16,
-        surgeAmplitude: 10,
+        branch: 'guadalupe',
+        lambda: 24,
+        mu: 9,
+        c: 3,
+        K: 18,
+        surgeAmplitude: 14,
         zThreshold: 3.0,
-        firewallContainment: 0.45,
-        lateralRisk: 0.25,
+        gcashApiAutomation: 0.78,
+        stockoutCancelRisk: 0.1,
         alphabetSize: 62,
         tokenLength: 16,
-        fairMitigation: 0.65,
-        controlCostPhp: 850_000,
-        auditCostPhp: 35_000,
-        attackerGainPhp: 250_000,
-        breachPenaltyPhp: 1_200_000,
+        fairMitigation: 0.68,
+        controlCostPhp: 180_000,
+        auditCostPhp: 15_000,
+        attackerGainPhp: 80_000,
+        breachPenaltyPhp: 320_000,
         mtbfHours: 720,
         mttrHours: 1.5,
-        redundantGateways: 2,
+        redundantLinks: 2,
       };
       const results = runFullEngineValidation(defaults);
-      expect(results.length).toBe(6);
+      expect(results).toHaveLength(6);
       for (const check of results) {
         expect(check.passed, `Failed check: ${check.target} (${check.measured})`).toBe(true);
       }

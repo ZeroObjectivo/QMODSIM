@@ -8,8 +8,8 @@ interface MarkovGraphCanvasProps {
 }
 
 /**
- * Animated 5-state Hospital VLAN Absorbing Markov State Graph:
- * S0 Triage Kiosk -> S1 EHR Staging -> S2 ICU VLAN -> {S3 Quarantined, S4 Compromised}
+ * Animated 5-state Old Yorker's Order Ticket & Payment Lifecycle Markov Graph:
+ * S0 Cart/Branch Select -> S1 GCash Verify -> S2 Kitchen Prep/BOM -> {S3 Fulfilled, S4 Abandoned/Fraud}
  */
 export function MarkovGraphCanvas({ theme, markov }: MarkovGraphCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -43,24 +43,23 @@ export function MarkovGraphCanvas({ theme, markov }: MarkovGraphCanvasProps) {
       ctx.fillRect(0, 0, width, height);
 
       const nodes = [
-        { idx: 0, x: width * 0.14, y: height * 0.52, code: 'S₀', name: 'Triage Kiosk', color: palette.cyan },
-        { idx: 1, x: width * 0.41, y: height * 0.52, code: 'S₁', name: 'EHR Staging', color: palette.amber },
-        { idx: 2, x: width * 0.67, y: height * 0.52, code: 'S₂', name: 'ICU VLAN', color: palette.amber },
-        { idx: 3, x: width * 0.87, y: height * 0.24, code: 'S₃', name: 'Quarantined', color: palette.emerald },
-        { idx: 4, x: width * 0.87, y: height * 0.78, code: 'S₄', name: 'Compromised', color: palette.rose },
+        { idx: 0, x: width * 0.13, y: height * 0.52, code: 'S₀', name: 'Cart / Branch', color: palette.primary },
+        { idx: 1, x: width * 0.40, y: height * 0.52, code: 'S₁', name: 'GCash Verify', color: palette.amber },
+        { idx: 2, x: width * 0.66, y: height * 0.52, code: 'S₂', name: 'Kitchen / BOM', color: palette.amber },
+        { idx: 3, x: width * 0.87, y: height * 0.24, code: 'S₃', name: 'Fulfilled', color: palette.emerald },
+        { idx: 4, x: width * 0.87, y: height * 0.78, code: 'S₄', name: 'Drop / Fraud', color: palette.rose },
       ] as const;
 
       const edges: readonly { from: number; to: number; curve: number }[] = [
         { from: 0, to: 1, curve: 0 },
+        { from: 0, to: 2, curve: -40 },
         { from: 1, to: 2, curve: 0 },
-        { from: 0, to: 3, curve: -46 },
-        { from: 1, to: 3, curve: -24 },
         { from: 2, to: 3, curve: 0 },
+        { from: 0, to: 4, curve: 48 },
         { from: 1, to: 4, curve: 26 },
         { from: 2, to: 4, curve: 0 },
       ];
 
-      // Draw directed edges + animated telemetry packet dots
       const tPhase = (timeMs * 0.00075) % 1;
 
       for (const edge of edges) {
@@ -73,18 +72,17 @@ export function MarkovGraphCanvas({ theme, markov }: MarkovGraphCanvasProps) {
         const my = (a.y + b.y) / 2 + edge.curve;
 
         const strokeColor =
-          edge.to === 3 ? palette.emerald : edge.to === 4 ? palette.rose : palette.cyan;
+          edge.to === 3 ? palette.emerald : edge.to === 4 ? palette.rose : palette.primary;
 
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
         ctx.quadraticCurveTo(mx, my, b.x, b.y);
         ctx.strokeStyle = strokeColor;
-        ctx.globalAlpha = Math.max(0.25, Math.min(0.95, prob * 1.4));
-        ctx.lineWidth = 1.2 + prob * 2.5;
+        ctx.globalAlpha = Math.max(0.25, Math.min(0.95, prob * 1.3));
+        ctx.lineWidth = 1.2 + prob * 2.4;
         ctx.stroke();
         ctx.globalAlpha = 1;
 
-        // Animated flow particle along quadratic Bezier
         const u = (tPhase + edge.from * 0.23 + edge.to * 0.11) % 1;
         const inv = 1 - u;
         const px = inv * inv * a.x + 2 * inv * u * mx + u * u * b.x;
@@ -94,7 +92,6 @@ export function MarkovGraphCanvas({ theme, markov }: MarkovGraphCanvasProps) {
         ctx.fillStyle = strokeColor;
         ctx.fill();
 
-        // Transition probability label
         const lx = 0.25 * a.x + 0.5 * mx + 0.25 * b.x;
         const ly = 0.25 * a.y + 0.5 * my + 0.25 * b.y - 6;
         ctx.fillStyle = palette.muted;
@@ -103,7 +100,6 @@ export function MarkovGraphCanvas({ theme, markov }: MarkovGraphCanvasProps) {
         ctx.fillText(prob.toFixed(2), lx, ly);
       }
 
-      // Draw nodes
       for (const node of nodes) {
         const radius = 24;
         ctx.beginPath();
@@ -114,7 +110,6 @@ export function MarkovGraphCanvas({ theme, markov }: MarkovGraphCanvasProps) {
         ctx.strokeStyle = node.color;
         ctx.stroke();
 
-        // Double ring for absorbing states
         if (node.idx >= 3) {
           ctx.beginPath();
           ctx.arc(node.x, node.y, radius - 4, 0, Math.PI * 2);
@@ -133,14 +128,13 @@ export function MarkovGraphCanvas({ theme, markov }: MarkovGraphCanvasProps) {
         ctx.fillText(node.name, node.x, node.y + radius + 14);
       }
 
-      // Header summary
-      const pSafeFromS0 = (m.absorptionProbabilities[0]?.[0] ?? 0) * 100;
-      const pBreachFromS0 = (m.absorptionProbabilities[0]?.[1] ?? 0) * 100;
+      const pFulfillFromS0 = (m.absorptionProbabilities[0]?.[0] ?? 0) * 100;
+      const pDropFromS0 = (m.absorptionProbabilities[0]?.[1] ?? 0) * 100;
       ctx.fillStyle = palette.text;
       ctx.font = '600 11px "Inter", sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText(
-        `From S₀ → P(Quarantined) = ${pSafeFromS0.toFixed(1)}% · P(Breach) = ${pBreachFromS0.toFixed(1)}%`,
+        `From S₀ → P(Fulfilled & Deducted) = ${pFulfillFromS0.toFixed(1)}% · P(Abandon/Fraud) = ${pDropFromS0.toFixed(1)}%`,
         12,
         16
       );
@@ -157,7 +151,7 @@ export function MarkovGraphCanvas({ theme, markov }: MarkovGraphCanvasProps) {
     <canvas
       ref={canvasRef}
       className="h-[260px] w-full block"
-      aria-label="Hospital VLAN Absorbing Markov Chain State Graph"
+      aria-label="Old Yorker's Absorbing Markov Order Ticket Lifecycle Graph"
     />
   );
 }

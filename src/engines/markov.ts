@@ -1,54 +1,53 @@
 import type { MarkovAnalysisResult, MarkovStateNode } from '../types/simulation';
 import { clamp } from './arrivals';
 
-export const HOSPITAL_VLAN_STATES: readonly MarkovStateNode[] = [
-  { id: 'S0_TRIAGE_KIOSK', label: 'S₀ Triage Kiosk', kind: 'transient', index: 0 },
-  { id: 'S1_EHR_STAGING', label: 'S₁ EHR Staging', kind: 'transient', index: 1 },
-  { id: 'S2_ICU_VLAN', label: 'S₂ ICU Telemetry VLAN', kind: 'transient', index: 2 },
-  { id: 'S3_QUARANTINED', label: 'S₃ Quarantined (Safe)', kind: 'absorbing-safe', index: 3 },
-  { id: 'S4_COMPROMISED', label: 'S₄ Compromised (Breach)', kind: 'absorbing-breach', index: 4 },
+export const OLD_YORKERS_ORDER_STATES: readonly MarkovStateNode[] = [
+  { id: 'S0_CART_SELECT', label: 'S₀ Cart & Branch Select', kind: 'transient', index: 0 },
+  { id: 'S1_GCASH_VERIFY', label: 'S₁ GCash Payment Verify', kind: 'transient', index: 1 },
+  { id: 'S2_KITCHEN_PREP', label: 'S₂ Kitchen Prep & BOM Deduct', kind: 'transient', index: 2 },
+  { id: 'S3_FULFILLED', label: 'S₃ Fulfilled & Deducted', kind: 'absorbing-safe', index: 3 },
+  { id: 'S4_ABANDONED_FRAUD', label: 'S₄ Abandoned / Fraud / Stockout', kind: 'absorbing-loss', index: 4 },
 ];
 
 /**
  * Builds canonical 5×5 absorbing Markov transition matrix P = [ Q R ; 0 I ]
- * where every row strictly sums to 1.0.
+ * for Old Yorker's multi-branch order lifecycle where every row strictly sums to 1.0.
  */
-export function buildHospitalVlanMatrix(
-  firewallContainment: number,
-  lateralRisk: number
+export function buildOrderLifecycleMatrix(
+  gcashApiAutomation: number,
+  stockoutCancelRisk: number
 ): number[][] {
-  const contain = clamp(firewallContainment, 0.1, 0.85);
-  const lateral = clamp(lateralRisk, 0.05, 0.65);
+  const apiRate = clamp(gcashApiAutomation, 0.2, 0.9);
+  const dropRisk = clamp(stockoutCancelRisk, 0.03, 0.45);
 
-  // Row 0: Triage Kiosk -> [stay, move to EHR, direct ICU, quarantined, compromised]
-  const r0Move = Math.min(lateral, 1 - contain - 0.1);
-  const r0Stay = Math.max(0.05, 1 - contain - r0Move - 0.02);
-  const r0Breach = Math.max(0, 1 - (r0Stay + r0Move + contain));
+  // Row 0: S0 Cart & Branch Select -> [stay browsing, proceed to GCash verify, direct COD prep, 0, cart abandon]
+  const r0Abandon = Math.min(dropRisk * 0.75, 0.32);
+  const r0ToGcash = Math.min(0.68, Math.max(0.25, apiRate * 0.72));
+  const r0ToCodPrep = Math.min(0.18, Math.max(0.05, 1 - r0Abandon - r0ToGcash - 0.08));
+  const r0Stay = Math.max(0, 1 - (r0ToGcash + r0ToCodPrep + r0Abandon));
 
-  // Row 1: EHR Staging -> [back to kiosk, stay, pivot to ICU, quarantined, compromised]
-  const r1Pivot = Math.min(lateral * 0.9, 1 - contain - 0.12);
-  const r1Back = 0.05;
-  const r1Breach = Math.min(0.18, Math.max(0.02, lateral * 0.28));
-  const r1Stay = Math.max(0.04, 1 - (r1Back + r1Pivot + contain + r1Breach));
-  const r1Contain = Math.max(0, 1 - (r1Back + r1Stay + r1Pivot + r1Breach));
+  // Row 1: S1 GCash Payment Verify -> [retry cart, waiting screenshot/API, verified to kitchen, 0, fake/timeout drop]
+  const r1Retry = 0.03;
+  const r1Verify = Math.min(0.88, Math.max(0.25, apiRate));
+  const r1FraudTimeout = Math.min(dropRisk * 0.85, 1 - r1Retry - r1Verify - 0.02);
+  const r1Wait = Math.max(0, 1 - (r1Retry + r1Verify + r1FraudTimeout));
 
-  // Row 2: ICU Telemetry VLAN -> [kiosk=0, back to EHR, stay, quarantined, compromised]
-  const r2Back = 0.04;
-  const r2Breach = Math.min(0.55, Math.max(0.05, lateral * 0.85));
-  const r2Contain = Math.min(contain * 0.9, 1 - r2Back - r2Breach - 0.05);
-  const r2Stay = Math.max(0, 1 - (r2Back + r2Contain + r2Breach));
+  // Row 2: S2 Kitchen Prep & BOM Deduct -> [0, 0, still grilling, fulfilled & deducted, stockout cancel]
+  const r2Stockout = Math.min(dropRisk * 0.7, 0.35);
+  const r2Fulfill = Math.min(0.82, Math.max(0.45, 0.55 + apiRate * 0.3 - dropRisk * 0.3));
+  const r2Grilling = Math.max(0, 1 - (r2Fulfill + r2Stockout));
 
   return [
-    [r0Stay, r0Move, 0, contain, r0Breach],
-    [r1Back, r1Stay, r1Pivot, r1Contain, r1Breach],
-    [0, r2Back, r2Stay, r2Contain, r2Breach],
+    [r0Stay, r0ToGcash, r0ToCodPrep, 0, r0Abandon],
+    [r1Retry, r1Wait, r1Verify, 0, r1FraudTimeout],
+    [0, 0, r2Grilling, r2Fulfill, r2Stockout],
     [0, 0, 0, 1, 0],
     [0, 0, 0, 0, 1],
   ];
 }
 
 /**
- * Exact Gauss-Jordan matrix inversion for small dense matrices (N = (I - Q)⁻¹).
+ * Exact Gauss-Jordan matrix inversion for fundamental matrix N = (I - Q)⁻¹.
  */
 export function invertMatrix(matrix: readonly (readonly number[])[]): number[][] {
   const n = matrix.length;
@@ -95,12 +94,6 @@ export function invertMatrix(matrix: readonly (readonly number[])[]): number[][]
   return aug.map((row) => row.slice(n));
 }
 
-/**
- * Analyzes an absorbing Markov chain in canonical form P = [Q R ; 0 I]:
- * - Fundamental matrix N = (I - Q)⁻¹
- * - Absorption probabilities B = N · R
- * - Expected steps to absorption t = N · 1
- */
 export function analyzeAbsorbingMarkov(
   transitionMatrix: readonly (readonly number[])[],
   transientCount = 3
@@ -115,7 +108,6 @@ export function analyzeAbsorbingMarkov(
   }
   const isRowStochastic = maxRowDeviation < 1e-5;
 
-  // Build (I - Q)
   const iMinusQ: number[][] = [];
   for (let i = 0; i < transientCount; i++) {
     const row: number[] = [];
@@ -128,7 +120,6 @@ export function analyzeAbsorbingMarkov(
 
   const N = invertMatrix(iMinusQ);
 
-  // B = N · R
   const B: number[][] = [];
   for (let i = 0; i < transientCount; i++) {
     const row: number[] = [];
@@ -142,11 +133,10 @@ export function analyzeAbsorbingMarkov(
     B.push(row);
   }
 
-  // t = N · 1
   const meanStepsToAbsorption = N.map((row) => row.reduce((acc, v) => acc + v, 0));
 
   return {
-    states: HOSPITAL_VLAN_STATES,
+    states: OLD_YORKERS_ORDER_STATES,
     transitionMatrix,
     fundamentalMatrix: N,
     absorptionProbabilities: B,

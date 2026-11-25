@@ -26,7 +26,6 @@ export function exponentialPdf(lambda: number, t: number): number {
 
 /**
  * Poisson count probability: P(N(t) = k) = ((λ · t)^k · e^(-λt)) / k!
- * Uses log-gamma/log-factorial summation to avoid floating-point overflow for large k.
  */
 export function poissonPmf(lambda: number, t: number, k: number): number {
   const safeLambda = clamp(lambda, 0.01, 1000);
@@ -45,7 +44,7 @@ export function poissonPmf(lambda: number, t: number, k: number): number {
 }
 
 /**
- * Non-Homogeneous Poisson Process (NHPP) surge rate:
+ * Non-Homogeneous Poisson Process (NHPP) meal-rush order arrival rate:
  * λ(t) = λ_base + Σ [A_i · exp(-(t - t_peak,i)² / (2σ_i²))]
  */
 export function nonHomogeneousRate(
@@ -63,18 +62,22 @@ export function nonHomogeneousRate(
   return rate;
 }
 
-export function buildDailyErSurgeProfile(
+/**
+ * Old Yorker's daily branch order profile (10:00 AM – 10:00 PM operating window
+ * plotted across 24h) capturing Lunch (12:00 PM), Merienda (3:30 PM), and Dinner (7:00 PM) surges.
+ */
+export function buildBranchOrderSurgeProfile(
   baseRate: number,
-  codeBlueAmplitude: number
+  peakRushAmplitude: number
 ): readonly { readonly hour: number; readonly rate: number }[] {
   const surges: readonly SurgePeak[] = [
-    { label: '08:00 AM Shift Handover Rush', amplitude: codeBlueAmplitude * 0.7, peakHour: 8, spread: 1.8 },
-    { label: '14:00 PM Multi-Trauma Code Blue', amplitude: codeBlueAmplitude, peakHour: 14, spread: 1.4 },
-    { label: '19:30 PM Evening Commute Peak', amplitude: codeBlueAmplitude * 0.85, peakHour: 19.5, spread: 2.1 },
+    { label: '12:00 PM Lunch Rush', amplitude: peakRushAmplitude * 0.85, peakHour: 12.0, spread: 1.4 },
+    { label: '15:30 PM Merienda Snack Peak', amplitude: peakRushAmplitude * 0.65, peakHour: 15.5, spread: 1.3 },
+    { label: '19:00 PM Dinner & Commute Surge', amplitude: peakRushAmplitude, peakHour: 19.0, spread: 1.7 },
   ];
 
   const points: { hour: number; rate: number }[] = [];
-  for (let h = 0; h <= 24; h += 0.5) {
+  for (let h = 8; h <= 23; h += 0.5) {
     points.push({
       hour: h,
       rate: nonHomogeneousRate(h, baseRate, surges),
@@ -89,7 +92,7 @@ export function buildDailyErSurgeProfile(
  */
 export function simulatePoissonInterArrivals(
   lambda: number,
-  sampleCount = 12000,
+  sampleCount = 15000,
   seed = 20260401
 ): ArrivalSimulationSummary {
   const safeLambda = clamp(lambda, 0.1, 500);

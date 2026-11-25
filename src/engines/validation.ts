@@ -1,10 +1,10 @@
 import type { LabParameters, ValidationResult } from '../types/simulation';
 import { simulatePoissonInterArrivals } from './arrivals';
 import { solveMMcK } from './queueing';
-import { buildHospitalVlanMatrix } from './markov';
+import { buildOrderLifecycleMatrix } from './markov';
 import { runFairMonteCarlo } from './fairMonteCarlo';
-import { generateInfusionTelemetryTrace } from './anomaly';
-import { evaluateHospitalInfrastructure } from './reliability';
+import { generateIngredientDeductionTrace } from './anomaly';
+import { evaluateBranchInfrastructure } from './reliability';
 
 /**
  * Core automated mathematical verification routine matching Section 6 of the
@@ -44,13 +44,13 @@ export function runInvariantChecks(params: {
     },
     {
       target: "Little's Law Conservation",
-      standard: '|L - (λ_eff · W)| < 10⁻⁵ across buffer states',
+      standard: '|L - (λ_eff · W)| < 10⁻⁵ across order buffer states',
       measured: `Diff: ${littlesLawDiff.toExponential(2)}`,
       passed: littlesLawDiff < 1e-5,
     },
     {
       target: 'Markov Row-Stochasticity',
-      standard: 'Σ P_ij = 1.0 for all states i in S',
+      standard: 'Σ P_ij = 1.0 for all order lifecycle states i in S',
       measured: isRowStochastic ? 'All rows = 1.0000' : 'Row sum mismatch',
       passed: isRowStochastic,
     },
@@ -63,22 +63,18 @@ export function runInvariantChecks(params: {
   ];
 }
 
-/**
- * Runs the complete live Verification & Validation suite against the active
- * LAB parameters for the in-app Verification Drawer.
- */
 export function runFullEngineValidation(lab: LabParameters): ValidationResult[] {
   const arrivalSim = simulatePoissonInterArrivals(lab.lambda, 15000, 20260401);
   const queue = solveMMcK({ lambda: lab.lambda, mu: lab.mu, c: lab.c, K: lab.K });
-  const markovMatrix = buildHospitalVlanMatrix(lab.firewallContainment, lab.lateralRisk);
+  const markovMatrix = buildOrderLifecycleMatrix(lab.gcashApiAutomation, lab.stockoutCancelRisk);
 
   const fairInput = {
-    tefMin: 0.4,
-    tefLikely: 1.4,
-    tefMax: 3.8,
-    lossLogMu: 13.9,
+    tefMin: 1.5,
+    tefLikely: 4.5,
+    tefMax: 10.0,
+    lossLogMu: 11.4,
     lossLogSigma: 0.42,
-    secondaryLossMultiplier: 0.65,
+    secondaryLossMultiplier: 0.55,
     mitigationFactor: lab.fairMitigation,
     controlCostPhp: lab.controlCostPhp,
   };
@@ -96,18 +92,17 @@ export function runFullEngineValidation(lab: LabParameters): ValidationResult[] 
     aleSeedB: fairB.aleMean,
   });
 
-  // Additional domain invariants: Z-Score anomaly recall & Reliability monotonicity
-  const ticks = generateInfusionTelemetryTrace(120, Math.min(lab.zThreshold, 3.5), 7711);
+  const ticks = generateIngredientDeductionTrace(120, Math.min(lab.zThreshold, 3.5), 7711);
   const detectedSpikes = [48, 76, 102].filter((idx) => ticks[idx]?.isAnomaly).length;
 
-  const rel = evaluateHospitalInfrastructure({
-    wanFailureRate: 0.0012,
-    ehrFailureRate: 0.0004,
-    gatewayFailureRate: 0.0015,
+  const rel = evaluateBranchInfrastructure({
+    ispFailureRate: 0.0018,
+    mysqlFailureRate: 0.0003,
+    gcashApiFailureRate: 0.001,
     missionHours: 168,
     mtbfHours: lab.mtbfHours,
     mttrHours: lab.mttrHours,
-    redundantGateways: lab.redundantGateways,
+    redundantLinks: lab.redundantLinks,
   });
   const relMonotonic =
     rel.seriesReliability >= 0 &&
@@ -117,13 +112,13 @@ export function runFullEngineValidation(lab: LabParameters): ValidationResult[] 
   return [
     ...coreChecks,
     {
-      target: 'IV Infusion Z-Score Spike Recall',
-      standard: 'Detects 3/3 injected dosage tampering spikes',
+      target: 'BOM Shrinkage Z-Score Spike Recall',
+      standard: 'Detects 3/3 injected bun/beef deduction spikes',
       measured: `Detected: ${detectedSpikes}/3 spikes`,
       passed: detectedSpikes === 3,
     },
     {
-      target: 'Redundancy Reliability Dominance',
+      target: 'Branch Failover Reliability Dominance',
       standard: '0 ≤ R_series(t) ≤ R_redundant(t) ≤ 1',
       measured: `R_s=${rel.seriesReliability.toFixed(4)} ≤ R_r=${rel.hybridSystemReliability.toFixed(4)}`,
       passed: relMonotonic,

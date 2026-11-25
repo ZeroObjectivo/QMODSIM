@@ -1,29 +1,18 @@
-# DESIGN_SYSTEM.md — AEGIS-ER Clinical Instrument Aesthetic
+# DESIGN_SYSTEM.md — Old Yorker's Warm Diner / Retail Operations Palette
 
-Grounded in **Taste Skill**, **UI/UX Pro Max**, and **Hallmark** principles to eliminate generic AI visual clichés (zero purple neon gradients, zero heavy drop shadows, zero blurry glassmorphism).
+Grounded in **Taste Skill**, **UI/UX Pro Max**, and **Hallmark** principles, derived directly from Old Yorker's Figure 1 IPO visual identity (warm diner amber & brick terracotta on crisp stone/charcoal surfaces — zero purple neon gradients, zero heavy drop shadows, zero blurry glassmorphism).
 
-## 1. Visual Philosophy
-AEGIS-ER is styled as a **Clinical Telemetry & Quantitative Engineering Instrument**:
-- Flat, high-contrast editorial surfaces
-- Crisp `1px` structural borders (`border-slate-800` in Dark mode, `border-slate-200` in Light mode)
-- Tabular monospace numerals (`font-mono tabular-nums`) for every live metric, slider readout, probability, and currency figure
-- Clean Unicode mathematical typography (`λ, μ, ρ, σ, τ, →, ·, ±, ≤, ≥, ², ³, ⁻¹, ₀`) — zero raw LaTeX strings anywhere in DOM or Canvas
+## 1. Dual-Theme Token Palette
 
-## 2. Dual-Theme Token Palette
-
-| Token | Light Mode (Clinical Paper) | Dark Mode (Night-Shift Telemetry) | Usage |
+| Token | Light Mode (Warm Stone Paper) | Dark Mode (Grillhouse Charcoal) | Usage |
 | :--- | :--- | :--- | :--- |
-| `--bg-canvas` | `#F8FAFC` | `#090E1A` | Page background |
-| `--bg-surface` | `#FFFFFF` | `#0F172A` | Cards, panels, drawers |
-| `--bg-elevated` | `#F1F5F9` | `#1E293B` | Subtle inset strips, tables |
-| `--border-hairline` | `#E2E8F0` | `#1E293B` | 1px card & divider borders |
-| `--text-primary` | `#0F172A` | `#F1F5F9` | Headings, primary telemetry |
-| `--text-muted` | `#475569` | `#94A3B8` | Labels, units, footnotes |
-| `--accent-cyan` | `#0284C7` | `#22D3EE` | Primary telemetry, active tab, normal flow |
-| `--accent-emerald` | `#059669` | `#34D399` | Passed invariants, safe/quarantined state |
-| `--accent-amber` | `#D97706` | `#FBBF24` | Elevated utilization, warnings |
-| `--accent-rose` | `#E11D48` | `#FB7185` | Code Blue saturation, anomalies, breach state |
-
-## 3. Typography
-- **UI & Editorial Headings:** `Inter`, system-ui, sans-serif
-- **Telemetry, Equations & Code:** `JetBrains Mono`, ui-monospace, monospace with `font-variant-numeric: tabular-nums`
+| `--bg-canvas` | `#FAF8F5` (warm stone-50) | `#0E0D0C` (deep espresso charcoal) | Page background |
+| `--bg-surface` | `#FFFFFF` | `#171513` (warm charcoal surface) | Cards, panels, drawers |
+| `--bg-elevated` | `#F5F2EC` | `#23201D` | Tables, KPI insets |
+| `--border-hairline` | `#E7E2D8` | `#2E2A26` | 1px card & divider borders |
+| `--text-primary` | `#1C1917` (`stone-900`) | `#F5F5F4` (`stone-100`) | Headings, primary telemetry |
+| `--text-muted` | `#57534E` (`stone-600`) | `#A8A29E` (`stone-400`) | Labels, units, footnotes |
+| `--accent-amber` | `#C2410C` (`orange-700`) | `#F59E0B` (`amber-500`) | Primary Old Yorker's brand accent, active tab |
+| `--accent-emerald` | `#059669` (`emerald-600`) | `#34D399` (`emerald-400`) | Verified GCash API, fulfilled orders, passed checks |
+| `--accent-gold` | `#B45309` (`amber-700`) | `#FBBF24` (`amber-400`) | Elevated rush utilization, warning bands |
+| `--accent-rose` | `#BE123C` (`rose-700`) | `#FB7185` (`rose-400`) | Saturated kitchen, fake receipts, shrinkage spikes |

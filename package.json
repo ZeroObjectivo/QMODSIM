@@ -1,9 +1,9 @@
 {
-  "name": "aegis-er-qmodsim",
+  "name": "old-yorkers-qmodsim",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "AEGIS-ER: Interactive QMODSIM Web Artifact for Clinical Triage & Hospital ER Telemetry Hub",
+  "description": "Old Yorker's Multi-Branch Ordering & Inventory System — Interactive QMODSIM Web Artifact",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

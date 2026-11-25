@@ -3,8 +3,8 @@ import { clamp, createMulberry32 } from './arrivals';
 
 /**
  * Zero-allocation streaming Z-Score anomaly detector backed by a fixed-capacity
- * circular Float64Array of window size W. Maintains running sum and sum-of-squares
- * in O(1) time per incoming telemetry packet.
+ * circular Float64Array of window size W = 30. Maintains running sum and sum-of-squares
+ * in O(1) time per 15-minute branch BOM stock deduction log.
  */
 export class StreamingZScoreDetector {
   private readonly buffer: Float64Array;
@@ -22,7 +22,6 @@ export class StreamingZScoreDetector {
   public push(step: number, value: number, thresholdSigma: number): AnomalyTick {
     const tau = clamp(thresholdSigma, 1.0, 6.0);
 
-    // Evaluate Z-score against existing baseline window before mutating
     let mean = value;
     let stdDev = 0;
     let zScore = 0;
@@ -36,7 +35,6 @@ export class StreamingZScoreDetector {
       isAnomaly = zScore >= tau;
     }
 
-    // Only non-anomalous readings update the rolling baseline so attacks don't poison μ_t
     if (!isAnomaly) {
       if (this.count === this.capacity) {
         const evicted = this.buffer[this.head] ?? 0;
@@ -65,10 +63,10 @@ export class StreamingZScoreDetector {
 }
 
 /**
- * Generates a realistic IV infusion dosage telemetry trace (baseline 50 mL/hr)
- * with injected unauthorized tampering spikes to evaluate Z-score recall.
+ * Generates an Old Yorker's BOM raw ingredient deduction trace (baseline ~24 hotdog buns/beef
+ * units deducted per 15-min interval) with 3 injected unrecorded shrinkage / manual void spikes.
  */
-export function generateInfusionTelemetryTrace(
+export function generateIngredientDeductionTrace(
   length = 120,
   thresholdSigma = 3.0,
   seed = 7711
@@ -80,15 +78,15 @@ export function generateInfusionTelemetryTrace(
   for (let i = 0; i < length; i++) {
     const u1 = Math.max(1e-12, rng());
     const u2 = rng();
-    const noise = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2) * 1.4;
-    let dosageMlPerHr = 50 + noise;
+    const noise = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2) * 1.3;
+    let unitsDeducted = 24 + noise;
 
-    // Inject unauthorized dosage tampering spikes at steps 48, 76, 102
-    if (i === 48) dosageMlPerHr = 59.5;
-    else if (i === 76) dosageMlPerHr = 41.2;
-    else if (i === 102) dosageMlPerHr = 62.8;
+    // Inject abnormal shrinkage / void spikes at steps 48, 76, 102
+    if (i === 48) unitsDeducted = 34.2;
+    else if (i === 76) unitsDeducted = 14.8;
+    else if (i === 102) unitsDeducted = 37.5;
 
-    ticks.push(detector.push(i, dosageMlPerHr, thresholdSigma));
+    ticks.push(detector.push(i, unitsDeducted, thresholdSigma));
   }
 
   return ticks;

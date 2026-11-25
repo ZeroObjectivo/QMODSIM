@@ -1,23 +1,29 @@
 import { useEffect, useRef } from 'react';
 import type { QueueingResult, ThemeMode } from '../types/simulation';
-import { buildDailyErSurgeProfile } from '../engines/arrivals';
+import { buildBranchOrderSurgeProfile } from '../engines/arrivals';
 import { getCanvasTheme } from './canvasTheme';
 
-interface ErTriageCanvasProps {
+interface BranchKitchenCanvasProps {
   readonly theme: ThemeMode;
   readonly queue: QueueingResult;
   readonly surgeAmplitude: number;
+  readonly branchName: string;
 }
 
 /**
- * Custom AEGIS-ER HTML5 Canvas combining:
- * 1. Top half: 24-hour Non-Homogeneous ER Arrival Surge curve λ(t) vs. Total Bay Capacity (c·μ)
- * 2. Bottom half: Animated physical ER Triage Floor showing c active bays & K-c waiting chairs
+ * Custom Old Yorker's HTML5 Canvas combining:
+ * 1. Top half: Daily Branch Order Rush Curve λ(t) (12PM Lunch, 3:30PM Merienda, 7PM Dinner) vs. Grill Capacity (c·μ)
+ * 2. Bottom half: Animated Kitchen Grill/Prep Stations (c) & Online/Walk-in Ticket Rail (K - c)
  */
-export function ErTriageCanvas({ theme, queue, surgeAmplitude }: ErTriageCanvasProps) {
+export function BranchKitchenCanvas({
+  theme,
+  queue,
+  surgeAmplitude,
+  branchName,
+}: BranchKitchenCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const stateRef = useRef({ theme, queue, surgeAmplitude });
-  stateRef.current = { theme, queue, surgeAmplitude };
+  const stateRef = useRef({ theme, queue, surgeAmplitude, branchName });
+  stateRef.current = { theme, queue, surgeAmplitude, branchName };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -28,7 +34,8 @@ export function ErTriageCanvas({ theme, queue, surgeAmplitude }: ErTriageCanvasP
     let rafId = 0;
 
     const render = (timeMs: number) => {
-      const { theme: activeTheme, queue: q, surgeAmplitude: amp } = stateRef.current;
+      const { theme: activeTheme, queue: q, surgeAmplitude: amp, branchName: bName } =
+        stateRef.current;
       const palette = getCanvasTheme(activeTheme);
       const rect = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
@@ -45,18 +52,17 @@ export function ErTriageCanvas({ theme, queue, surgeAmplitude }: ErTriageCanvasP
       ctx.fillStyle = palette.bg;
       ctx.fillRect(0, 0, width, height);
 
-      // --- TOP PANEL: 24h Non-Homogeneous Arrival Rate λ(t) ---
+      // --- TOP PANEL: Daily Meal Rush Profile λ(t) (08:00 – 23:00) ---
       const padL = 44;
       const padR = 16;
       const padT = 22;
       const chartH = Math.floor(height * 0.46);
       const chartW = width - padL - padR;
 
-      const profile = buildDailyErSurgeProfile(q.lambda, amp);
+      const profile = buildBranchOrderSurgeProfile(q.lambda, amp);
       const capacity = q.c * q.mu;
-      const maxRate = Math.max(capacity * 1.25, ...profile.map((p) => p.rate), 20);
+      const maxRate = Math.max(capacity * 1.25, ...profile.map((p) => p.rate), 25);
 
-      // Grid lines
       ctx.strokeStyle = palette.grid;
       ctx.lineWidth = 1;
       for (let i = 0; i <= 4; i++) {
@@ -73,7 +79,7 @@ export function ErTriageCanvas({ theme, queue, surgeAmplitude }: ErTriageCanvasP
         ctx.fillText(val.toFixed(0), padL - 6, y + 3);
       }
 
-      // Capacity line (c · μ)
+      // Grill capacity line (c · μ)
       const capY = padT + chartH * (1 - capacity / maxRate);
       ctx.save();
       ctx.setLineDash([4, 4]);
@@ -88,12 +94,14 @@ export function ErTriageCanvas({ theme, queue, surgeAmplitude }: ErTriageCanvasP
       ctx.fillStyle = palette.emerald;
       ctx.font = '10px "JetBrains Mono", monospace';
       ctx.textAlign = 'right';
-      ctx.fillText(`c·μ = ${capacity.toFixed(1)}/hr`, padL + chartW, capY - 4);
+      ctx.fillText(`Kitchen c·μ = ${capacity.toFixed(1)}/hr`, padL + chartW, capY - 4);
 
-      // Filled surge area
+      const minH = 8;
+      const spanH = 15; // 08:00 -> 23:00
+
       ctx.beginPath();
       profile.forEach((pt, idx) => {
-        const x = padL + (pt.hour / 24) * chartW;
+        const x = padL + ((pt.hour - minH) / spanH) * chartW;
         const y = padT + chartH * (1 - pt.rate / maxRate);
         if (idx === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
@@ -101,24 +109,23 @@ export function ErTriageCanvas({ theme, queue, surgeAmplitude }: ErTriageCanvasP
       ctx.lineTo(padL + chartW, padT + chartH);
       ctx.lineTo(padL, padT + chartH);
       ctx.closePath();
-      ctx.fillStyle = q.rho >= 0.95 ? palette.roseSoft : palette.cyanSoft;
+      ctx.fillStyle = q.rho >= 0.95 ? palette.roseSoft : palette.primarySoft;
       ctx.fill();
 
-      // Surge stroke
       ctx.beginPath();
       profile.forEach((pt, idx) => {
-        const x = padL + (pt.hour / 24) * chartW;
+        const x = padL + ((pt.hour - minH) / spanH) * chartW;
         const y = padT + chartH * (1 - pt.rate / maxRate);
         if (idx === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       });
-      ctx.strokeStyle = q.rho >= 0.95 ? palette.rose : palette.cyan;
+      ctx.strokeStyle = q.rho >= 0.95 ? palette.rose : palette.primary;
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      // Animated time-of-day scanner
-      const scanHour = ((timeMs * 0.0022) % 24);
-      const scanX = padL + (scanHour / 24) * chartW;
+      // Animated shift clock scanner
+      const scanHour = minH + ((timeMs * 0.0018) % spanH);
+      const scanX = padL + ((scanHour - minH) / spanH) * chartW;
       ctx.strokeStyle = palette.amber;
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -126,21 +133,21 @@ export function ErTriageCanvas({ theme, queue, surgeAmplitude }: ErTriageCanvasP
       ctx.lineTo(scanX, padT + chartH);
       ctx.stroke();
 
-      // X-axis hour labels
       ctx.fillStyle = palette.muted;
       ctx.font = '10px "JetBrains Mono", monospace';
       ctx.textAlign = 'center';
-      for (let h = 0; h <= 24; h += 6) {
-        const x = padL + (h / 24) * chartW;
-        ctx.fillText(`${String(h).padStart(2, '0')}:00`, x, padT + chartH + 13);
+      for (const h of [8, 12, 15.5, 19, 23]) {
+        const x = padL + ((h - minH) / spanH) * chartW;
+        const label = h === 15.5 ? '15:30' : `${String(h).padStart(2, '0')}:00`;
+        ctx.fillText(label, x, padT + chartH + 13);
       }
 
       ctx.fillStyle = palette.text;
       ctx.font = '600 11px "Inter", sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText('24h ER Surge Rate λ(t) vs. Service Capacity (c·μ)', padL, 13);
+      ctx.fillText(`${bName} · Peak Order Surge λ(t) vs. Prep Capacity (c·μ)`, padL, 13);
 
-      // --- BOTTOM PANEL: Physical ER Triage Bays (c) + Holding Buffer (K - c) ---
+      // --- BOTTOM PANEL: Kitchen Grill/Prep Stations (c) + Active Order Ticket Rail (K - c) ---
       const floorTop = padT + chartH + 26;
       const floorH = height - floorTop - 10;
 
@@ -148,19 +155,19 @@ export function ErTriageCanvas({ theme, queue, surgeAmplitude }: ErTriageCanvasP
       ctx.font = '600 11px "Inter", sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText(
-        `ER Floor State · Expected Occupancy L = ${q.L.toFixed(2)} / K = ${q.K} · Drop P_K = ${(q.pDrop * 100).toFixed(1)}%`,
+        `Kitchen Floor · Active Orders L = ${q.L.toFixed(2)} / K = ${q.K} · Overlooked/Dropped P_K = ${(q.pDrop * 100).toFixed(1)}%`,
         padL,
         floorTop + 8
       );
 
-      const expectedBusyBays = Math.min(q.c, q.L);
+      const expectedBusy = Math.min(q.c, q.L);
       const expectedWaiting = Math.max(0, q.L - q.c);
-      const waitingSlots = Math.max(0, q.K - q.c);
-      const pulse = 0.5 + 0.5 * Math.sin(timeMs * 0.005);
+      const railSlots = Math.max(0, q.K - q.c);
+      const pulse = 0.5 + 0.5 * Math.sin(timeMs * 0.006);
 
       const baysAreaY = floorTop + 18;
       const baysH = Math.max(30, floorH - 22);
-      const bayCols = Math.min(q.c, 6);
+      const bayCols = Math.min(q.c, 5);
       const bayRows = Math.ceil(q.c / bayCols);
       const bayAreaW = Math.floor(chartW * 0.52);
       const cellW = Math.floor((bayAreaW - (bayCols - 1) * 6) / bayCols);
@@ -171,17 +178,17 @@ export function ErTriageCanvas({ theme, queue, surgeAmplitude }: ErTriageCanvasP
         const row = Math.floor(i / bayCols);
         const bx = padL + col * (cellW + 6);
         const by = baysAreaY + row * (cellH + 6);
-        const occupied = i < Math.round(expectedBusyBays);
+        const occupied = i < Math.round(expectedBusy);
 
         ctx.fillStyle = occupied
           ? q.rho >= 0.95
             ? palette.roseSoft
-            : palette.cyanSoft
+            : palette.primarySoft
           : palette.surface;
         ctx.strokeStyle = occupied
           ? q.rho >= 0.95
             ? palette.rose
-            : palette.cyan
+            : palette.primary
           : palette.grid;
         ctx.lineWidth = 1;
         ctx.fillRect(bx, by, cellW, cellH);
@@ -190,29 +197,29 @@ export function ErTriageCanvas({ theme, queue, surgeAmplitude }: ErTriageCanvasP
         ctx.fillStyle = occupied ? palette.text : palette.muted;
         ctx.font = '10px "JetBrains Mono", monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(`BAY ${i + 1}`, bx + cellW / 2, by + cellH / 2 + 3);
+        ctx.fillText(`GRILL ${i + 1}`, bx + cellW / 2, by + cellH / 2 + 3);
 
         if (occupied) {
           ctx.beginPath();
-          ctx.arc(bx + cellW - 7, by + 7, 2.5 + pulse * 0.8, 0, Math.PI * 2);
-          ctx.fillStyle = q.rho >= 0.95 ? palette.rose : palette.cyan;
+          ctx.arc(bx + cellW - 7, by + 7, 2.4 + pulse * 0.8, 0, Math.PI * 2);
+          ctx.fillStyle = q.rho >= 0.95 ? palette.rose : palette.primary;
           ctx.fill();
         }
       }
 
-      // Waiting buffer chairs (K - c)
+      // Order ticket rail (K - c)
       const waitX = padL + bayAreaW + 14;
       const waitW = chartW - bayAreaW - 14;
       ctx.fillStyle = palette.muted;
       ctx.font = '10px "JetBrains Mono", monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(`HOLDING BUFFER (${waitingSlots} slots)`, waitX, baysAreaY - 4);
+      ctx.fillText(`ORDER TICKET RAIL (${railSlots} slots)`, waitX, baysAreaY - 4);
 
-      const waitCols = Math.min(Math.max(waitingSlots, 1), 8);
+      const waitCols = Math.min(Math.max(railSlots, 1), 9);
       const slotSize = Math.min(18, Math.floor((waitW - (waitCols - 1) * 4) / waitCols));
       const filledWait = Math.round(expectedWaiting);
 
-      for (let w = 0; w < waitingSlots; w++) {
+      for (let w = 0; w < railSlots; w++) {
         const col = w % waitCols;
         const row = Math.floor(w / waitCols);
         const sx = waitX + col * (slotSize + 4);
@@ -221,7 +228,7 @@ export function ErTriageCanvas({ theme, queue, surgeAmplitude }: ErTriageCanvasP
 
         const isFull = w < filledWait;
         ctx.fillStyle = isFull
-          ? w >= waitingSlots - 2 && q.pDrop > 0.05
+          ? w >= railSlots - 2 && q.pDrop > 0.05
             ? palette.rose
             : palette.amber
           : palette.surface;
@@ -243,7 +250,7 @@ export function ErTriageCanvas({ theme, queue, surgeAmplitude }: ErTriageCanvasP
     <canvas
       ref={canvasRef}
       className="h-[290px] w-full block"
-      aria-label="ER Triage Surge Curve and Triage Bay Occupancy Canvas"
+      aria-label="Old Yorker's Branch Order Surge and Kitchen Prep Station Occupancy Canvas"
     />
   );
 }

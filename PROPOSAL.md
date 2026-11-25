@@ -1,53 +1,44 @@
-# Capstone Proposal: AEGIS-ER — Clinical Triage & Hospital ER Telemetry Hub
+# Capstone Proposal: Optimizing Multi-Branch Retail — An Integrated Ordering and Inventory System for Old Yorker's
 
+**Institution:** University of Makati — College of Computing and Information Sciences (J.P. Rizal Ext., West Rembo, Makati City)  
 **Course:** Quantitative Modeling and Simulation (QMODSIM)  
-**Project Acronym:** AEGIS-ER  
-**Target Domain:** Philippine Level-3 Hospital Emergency Department & Clinical Telemetry Infrastructure  
+**Production Storefront:** [https://old-yorkers.vercel.app/](https://old-yorkers.vercel.app/)  
 **Team Roster:**
-- Calm Kaisha Boregas
-- Peter Paul Marfil
-- Pepe Bayotlang
-- Christian Salazar
-- Mayel Pagal
+- **Calm Kaisha Boregas** (Project Lead)
+- **Peter Paul Marfil**
+- **Pepe Bayotlang**
+- **Christian Salazar**
+- **Princess Mariel Pagal**
 
 ---
 
-## Chapter 1: Operational Context & Problem Statement
+## Chapter 1: The Problem and Its Background
 
-Emergency Rooms (ER) in urban Philippine hospitals face severe operational volatility during multi-casualty ambulance arrivals, morning shift handovers (08:00 AM), and evening peak surges (07:00 PM). Simultaneously, modern ERs rely on interconnected clinical telemetry—electronic health record (EHR) terminals, smart IV infusion pumps, and VLAN-segmented triage kiosks—creating a dual operational and cybersecurity risk surface.
+**Old Yorker's**, a rapidly growing Philippine food enterprise recognized for its signature hotdogs and snacks, has expanded from its original **Guadalupe Nuevo** branch to multiple locations across Metro Manila and nearby provinces, including **Bangkal, Taguig, Cainta, and Davao**.
 
-### 1.1 Operational Stressors
-1. **Non-Homogeneous Patient Arrival Surges:** ER arrivals do not follow a static rate; they exhibit Gaussian surge spikes layered on top of baseline Poisson arrivals during rush hours and Code Blue events.
-2. **Triage Bay & Waiting Buffer Saturation:** With finite triage physicians (c servers) and bounded holding capacity (K beds/chairs), sudden arrival spikes drive traffic utilization ρ ≥ 1, causing ambulance diversion and patient drop/rejection (P_K).
-3. **Gateway & ISP Failover Vulnerability:** Single-path hospital WAN links and centralized EHR servers risk complete triage downtime during ISP brownouts unless backed by parallel redundant gateways and offline SQLite sync queues.
+### 1.1 Operational Stressors (Legacy Manual Workflow)
+1. **Peak-Hour Chat & Order Bottlenecks:** Relying on Facebook Messenger inquiries and third-party apps during lunch (12:00 PM), merienda (03:30 PM), and dinner (07:00 PM) rushes causes delayed responses, overlooked orders, and kitchen queue saturation.
+2. **Manual GCash Receipt Screenshot Verification:** Staff must manually receive, cross-check, and validate customer GCash screenshots during peak rushes—slowing order service rates (`μ`) and creating a fraud vector for doctored receipts.
+3. **End-of-Day Physical Inventory Discrepancies:** Branch personnel manually count remaining raw ingredients (**hotdog buns, beef franks, specialty sauces/condiments, and packaging**) at closing time, leading to stock consolidation errors, unrecorded shrinkage, and unexpected branch stockouts.
 
 ### 1.2 Cybersecurity & CINS Threat Vectors
-1. **Weak Clinical Credentials (Entropy Deficit):** Legacy 4-digit nurse PINs on bedside EHR carts and infusion terminals have only 10⁴ combinations (≈ 13.29 bits), allowing rapid brute-force compromise within minutes.
-2. **Lateral VLAN Intrusion & Ransomware Spread:** A compromised triage kiosk can pivot across hospital network states (Triage Kiosk → EHR Staging → ICU Telemetry VLAN → Quarantined or Compromised Absorbing States).
-3. **Unauthorized Infusion Dosage Tampering:** Compromised telemetry packets can subtly alter IV infusion rates, requiring real-time streaming Z-score anomaly detection (Z_t ≥ τ_crit) to trigger automated clinical lockouts.
-4. **Insider EHR Snooping & RA 10173 Exposure:** Unauthorized access to sensitive patient records exposes the hospital to statutory penalties under the **Philippine Data Privacy Act of 2012 (Republic Act No. 10173)** and National Privacy Commission (NPC) breach notification mandates.
+1. **Weak Staff Credentials & Order Reference Enumeration:** Legacy numeric staff PINs and predictable order IDs risk unauthorized Admin/Branch Manager dashboard access across dispersed branches.
+2. **GCash Receipt Fraud & Unrecorded Shrinkage:** Without automated GCash API webhook verification and recipe-level Bill-of-Materials (BOM) deduction, branches suffer financial loss from fraudulent payment proofs and unmonitored ingredient shrinkage.
+3. **Multi-Branch Data Privacy Exposure (RA 10173):** Centralizing customer order histories, delivery details, and branch financial ledgers requires strict **Role-Based Access Control (RBAC)** (`Admin`, `Branch Manager`, `Staff`) under the Philippine Data Privacy Act of 2012.
 
 ---
 
-## Chapter 2: Quantitative Modeling & Simulation Objectives
+## Chapter 2: Quantitative Modeling & Simulation Mapping (QMODSIM)
 
-AEGIS-ER translates these operational and security challenges into a verified, interactive browser-based QMODSIM web artifact featuring three core archetypes (**SCENARIOS**, **LAB**, **CODEX**) and covering all core QMODSIM curriculum modules:
+This interactive web artifact translates Old Yorker's Chapters 1–2 IPO conceptual framework into a verified quantitative simulation across all core QMODSIM curriculum modules:
 
-| QMODSIM Module | AEGIS-ER Operational / Threat Mapping | Primary Quantitative Output |
+| QMODSIM Module | Old Yorker's Operational / Threat Mapping | Pure Engine Module |
 | :--- | :--- | :--- |
-| **Modules 1 & 3:** Stochastic Processes & Arrival Rates | Baseline ER arrivals + 08:00 AM / Code Blue Gaussian surges | λ(t), exponential inter-arrival f(t), Poisson P(N(t)=k) |
-| **Modules 2 & 10:** Security Modeling & Information Entropy | 4-digit nurse PIN vs. 12-char alphanumeric vs. 256-bit Web Crypto token | Shannon entropy H(X), keyspace S, time-to-crack T_crack |
-| **Module 4:** Monte Carlo & FAIR Risk Framework | RA 10173 breach fines, ransomware downtime, control ROI | 10,000-trial ALE distribution, P95 VaR, ROSI |
-| **Module 5:** Markov Chains & Network State Dynamics | Lateral VLAN intrusion & ER patient triage lifecycle | Fundamental matrix N = (I - Q)⁻¹, absorption B = N·R, steps t = N·1 |
-| **Module 6:** Queueing Theory (M/M/c/K) | Finite-capacity ER triage bays & ambulance diversion buffer | Utilization ρ, drop rate P_K, L, W, Little's Law |
-| **Module 7:** Game Theory in Network Defense | Security audit frequency vs. insider EHR snooping | Payoff matrix, Mixed-Strategy Nash Equilibrium (p*, q*) |
-| **Module 11:** ML Anomaly Detection in Network Logs | Real-time IV infusion dosage & EHR query spike detection | Streaming O(1) circular-buffer Z-score Z_t ≥ τ_crit |
-| **Module 12:** System Reliability & Availability | Hospital WAN + parallel gateway + offline SQLite failover | Series R_sys(t), parallel R_parallel(t), availability A |
-
----
-
-## Chapter 3: Statutory & Regulatory Alignment
-
-- **Republic Act No. 10173 (Data Privacy Act of 2012):** Enforces organizational, physical, and technical security measures for Sensitive Personal Information (SPI), including medical records (Section 20), and establishes penalties for unauthorized processing and negligent breach (Sections 25–33).
-- **NPC Circular 16-03 (Personal Data Breach Management):** Mandates 72-hour breach notification and quantitative impact assessment, modeled directly through AEGIS-ER's FAIR Monte Carlo module.
-- **DOH Administrative Order 2016-0042 (Hospital ER Triage Standards):** Establishes maximum triage wait thresholds and surge capacity readiness, validated via the M/M/c/K queueing engine.
+| **Modules 1 & 3:** Stochastic Processes & Arrival Rates | Lunch, merienda & dinner Gaussian order rushes across 5 branches | `src/engines/arrivals.ts` |
+| **Modules 2 & 10:** Security Modeling & Information Entropy | Weak 4-digit staff PIN vs. RBAC session & GCash webhook HMAC tokens | `src/engines/entropy.ts` |
+| **Module 4:** Monte Carlo & FAIR Risk Framework | Fake GCash receipts, raw ingredient shrinkage, stockouts & RA 10173 fines | `src/engines/fairMonteCarlo.ts` |
+| **Module 5:** Markov Chains & State Dynamics | Order ticket lifecycle (`Cart → GCash Verify → Kitchen Prep → Fulfilled / Abandoned`) | `src/engines/markov.ts` |
+| **Module 6:** Queueing Theory (`M/M/c/K`) | Kitchen grill/prep stations (`c`) & active order queue capacity (`K`) | `src/engines/queueing.ts` |
+| **Module 7:** Game Theory in Retail Defense | Branch Manager void/stock audits vs. unrecorded shrinkage & receipt fraud | `src/engines/gameTheory.ts` |
+| **Module 11:** ML Anomaly Detection in Logs | Zero-allocation streaming Z-score detection on BOM hotdog bun/beef deductions | `src/engines/anomaly.ts` |
+| **Module 12:** System Reliability & Availability | Multi-branch POS, MySQL DB & GCash API failover during ISP brownouts | `src/engines/reliability.ts` |

@@ -2,17 +2,18 @@ import { useEffect, useRef } from 'react';
 import type { AnomalyTick, ThemeMode } from '../types/simulation';
 import { getCanvasTheme } from './canvasTheme';
 
-interface InfusionZScoreCanvasProps {
+interface BomShrinkageCanvasProps {
   readonly theme: ThemeMode;
   readonly ticks: readonly AnomalyTick[];
   readonly threshold: number;
 }
 
 /**
- * Streaming IV Infusion Dosage Z-Score Oscilloscope showing rolling μ_t,
- * ±τ_crit clinical lockout bands, and flagged dosage tampering spikes.
+ * Streaming BOM Raw Ingredient Deduction Z-Score Oscilloscope
+ * tracking hotdog bun & beef frank units deducted per 15-minute window
+ * against ±τ_crit shrinkage & void alert bands.
  */
-export function InfusionZScoreCanvas({ theme, ticks, threshold }: InfusionZScoreCanvasProps) {
+export function BomShrinkageCanvas({ theme, ticks, threshold }: BomShrinkageCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -42,14 +43,13 @@ export function InfusionZScoreCanvas({ theme, ticks, threshold }: InfusionZScore
     const chartW = width - padL - padR;
     const chartH = height - padT - padB;
 
-    const minY = 38;
-    const maxY = 66;
+    const minY = 10;
+    const maxY = 42;
     const toY = (v: number) => padT + chartH * (1 - (v - minY) / (maxY - minY));
 
-    // Grid
     ctx.strokeStyle = palette.grid;
     ctx.lineWidth = 1;
-    for (const val of [40, 45, 50, 55, 60, 65]) {
+    for (const val of [12, 18, 24, 30, 36, 40]) {
       const y = toY(val);
       ctx.beginPath();
       ctx.moveTo(padL, y);
@@ -62,12 +62,11 @@ export function InfusionZScoreCanvas({ theme, ticks, threshold }: InfusionZScore
       ctx.fillText(`${val}`, padL - 6, y + 3);
     }
 
-    // Upper/Lower threshold bands around baseline 50 mL/hr (σ ≈ 1.4)
-    const bandHalf = threshold * 1.4;
-    const upperY = toY(50 + bandHalf);
-    const lowerY = toY(50 - bandHalf);
+    const bandHalf = threshold * 1.3;
+    const upperY = toY(24 + bandHalf);
+    const lowerY = toY(24 - bandHalf);
 
-    ctx.fillStyle = palette.cyanSoft;
+    ctx.fillStyle = palette.primarySoft;
     ctx.fillRect(padL, upperY, chartW, lowerY - upperY);
 
     ctx.save();
@@ -82,7 +81,6 @@ export function InfusionZScoreCanvas({ theme, ticks, threshold }: InfusionZScore
     ctx.stroke();
     ctx.restore();
 
-    // Waveform
     ctx.beginPath();
     ticks.forEach((tk, idx) => {
       const x = padL + (idx / Math.max(1, ticks.length - 1)) * chartW;
@@ -90,11 +88,10 @@ export function InfusionZScoreCanvas({ theme, ticks, threshold }: InfusionZScore
       if (idx === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
-    ctx.strokeStyle = palette.cyan;
+    ctx.strokeStyle = palette.primary;
     ctx.lineWidth = 1.6;
     ctx.stroke();
 
-    // Anomaly markers
     let anomalyCount = 0;
     ticks.forEach((tk, idx) => {
       if (!tk.isAnomaly) return;
@@ -117,7 +114,7 @@ export function InfusionZScoreCanvas({ theme, ticks, threshold }: InfusionZScore
     ctx.font = '600 11px "Inter", sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(
-      `IV Infusion Dosage Telemetry (mL/hr) · Threshold τ_crit = ±${threshold.toFixed(1)}σ · Flagged: ${anomalyCount}`,
+      `BOM Hotdog Bun & Beef Deductions (units / 15m) · τ_crit = ±${threshold.toFixed(1)}σ · Flagged: ${anomalyCount}`,
       padL,
       14
     );
@@ -129,7 +126,7 @@ export function InfusionZScoreCanvas({ theme, ticks, threshold }: InfusionZScore
     <canvas
       ref={canvasRef}
       className="h-[220px] w-full block"
-      aria-label="IV Infusion Dosage Z-Score Anomaly Detection Canvas"
+      aria-label="BOM Ingredient Shrinkage Z-Score Anomaly Detection Canvas"
     />
   );
 }

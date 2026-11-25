@@ -8,15 +8,11 @@ interface FairHistogramCanvasProps {
 }
 
 function formatPhpShort(val: number): string {
-  if (val >= 1_000_000) return `₱${(val / 1_000_000).toFixed(1)}M`;
+  if (val >= 1_000_000) return `₱${(val / 1_000_000).toFixed(2)}M`;
   if (val >= 1_000) return `₱${(val / 1_000).toFixed(0)}K`;
   return `₱${val.toFixed(0)}`;
 }
 
-/**
- * 10,000-Trial FAIR Monte Carlo Annual Loss Exposure (ALE) Histogram
- * with Mean ALE and P95 Value-at-Risk (VaR) markers.
- */
 export function FairHistogramCanvas({ theme, fair }: FairHistogramCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -51,7 +47,6 @@ export function FairHistogramCanvas({ theme, fair }: FairHistogramCanvasProps) {
     const maxFreq = Math.max(0.01, ...bins.map((b) => b.frequency));
     const maxVal = bins[bins.length - 1]?.max ?? 1;
 
-    // Horizontal grid lines
     ctx.strokeStyle = palette.grid;
     ctx.lineWidth = 1;
     for (let i = 0; i <= 4; i++) {
@@ -68,7 +63,6 @@ export function FairHistogramCanvas({ theme, fair }: FairHistogramCanvasProps) {
       ctx.fillText(`${pct.toFixed(0)}%`, padL - 6, y + 3);
     }
 
-    // Bars
     const barW = chartW / Math.max(1, bins.length);
     bins.forEach((bin, idx) => {
       const bh = (bin.frequency / maxFreq) * chartH;
@@ -76,17 +70,16 @@ export function FairHistogramCanvas({ theme, fair }: FairHistogramCanvasProps) {
       const y = padT + chartH - bh;
       const inTail = bin.min >= fair.aleP95;
 
-      ctx.fillStyle = inTail ? palette.rose : palette.cyan;
+      ctx.fillStyle = inTail ? palette.rose : palette.primary;
       ctx.globalAlpha = inTail ? 0.85 : 0.72;
       ctx.fillRect(x + 1, y, Math.max(1, barW - 2), bh);
     });
     ctx.globalAlpha = 1;
 
-    // Mean ALE vertical marker
     const meanX = padL + Math.min(1, fair.aleMean / maxVal) * chartW;
     ctx.save();
     ctx.setLineDash([4, 3]);
-    ctx.strokeStyle = palette.amber;
+    ctx.strokeStyle = palette.emerald;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(meanX, padT);
@@ -94,12 +87,11 @@ export function FairHistogramCanvas({ theme, fair }: FairHistogramCanvasProps) {
     ctx.stroke();
     ctx.restore();
 
-    ctx.fillStyle = palette.amber;
+    ctx.fillStyle = palette.emerald;
     ctx.font = '10px "JetBrains Mono", monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`ALE ${formatPhpShort(fair.aleMean)}`, Math.min(meanX + 4, width - 90), padT + 11);
+    ctx.fillText(`ALE ${formatPhpShort(fair.aleMean)}`, Math.min(meanX + 4, width - 92), padT + 11);
 
-    // P95 VaR vertical marker
     const p95X = padL + Math.min(1, fair.aleP95 / maxVal) * chartW;
     ctx.strokeStyle = palette.rose;
     ctx.lineWidth = 1.5;
@@ -112,7 +104,6 @@ export function FairHistogramCanvas({ theme, fair }: FairHistogramCanvasProps) {
     ctx.textAlign = 'right';
     ctx.fillText(`P95 ${formatPhpShort(fair.aleP95)}`, Math.max(p95X - 4, padL + 75), padT + 23);
 
-    // X-axis labels
     ctx.fillStyle = palette.muted;
     ctx.textAlign = 'center';
     for (let t = 0; t <= 4; t++) {
@@ -124,7 +115,7 @@ export function FairHistogramCanvas({ theme, fair }: FairHistogramCanvasProps) {
     ctx.font = '600 11px "Inter", sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(
-      `FAIR Risk Distribution (${fair.trials.toLocaleString()} Monte Carlo Trials · RA 10173 Exposure)`,
+      `FAIR Annual Loss Exposure (${fair.trials.toLocaleString()} Trials · Shrinkage, Fake Receipts & RA 10173)`,
       padL,
       15
     );
@@ -136,7 +127,7 @@ export function FairHistogramCanvas({ theme, fair }: FairHistogramCanvasProps) {
     <canvas
       ref={canvasRef}
       className="h-[240px] w-full block"
-      aria-label="FAIR Monte Carlo Loss Exposure Histogram"
+      aria-label="FAIR Monte Carlo Multi-Branch Risk Histogram"
     />
   );
 }
