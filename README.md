@@ -1,19 +1,20 @@
-# Old Yorker's · Multi-Branch Ordering & Inventory QMODSIM
+﻿# Old Yorker's Â· Multi-Branch Ordering & Inventory QMODSIM
 
-An interactive Quantitative Modeling and Simulation (QMODSIM) single-page web application validating the operational capacity, inventory accuracy, and cybersecurity resilience of **Optimizing Multi-Branch Retail: An Integrated Ordering and Inventory System for Old Yorker's** (University of Makati — College of Computing and Information Sciences).
+An interactive Quantitative Modeling and Simulation (QMODSIM) single-page web application validating the operational capacity, inventory accuracy, and cybersecurity resilience of **Optimizing Multi-Branch Retail: An Integrated Ordering and Inventory System for Old Yorker's** (University of Makati â€” College of Computing and Information Sciences).
 
 - **GitHub Repository:** [https://github.com/ZeroObjectivo/QMODSIM](https://github.com/ZeroObjectivo/QMODSIM)
 - **Old Yorker's Production Storefront:** [https://old-yorkers.vercel.app/](https://old-yorkers.vercel.app/)
 - **QMODSIM Live Deployment (Vercel):** https://old-yorkers-qmodsim.vercel.app/
-- **Capstone Proposal (Chapters 1–2 Summary):** [PROPOSAL.md](./PROPOSAL.md)
+- **Capstone Proposal (Chapters 1â€“2 Summary):** [PROPOSAL.md](./PROPOSAL.md)
 - **Technical Specification:** [SPEC.md](./SPEC.md)
 - **Design System:** [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md)
 - **Security & Skill Audit Report:** [SECURITY_AUDIT.md](./SECURITY_AUDIT.md)
+- **Mathematical Verification & Validation:** [MATHEMATICAL_VERIFICATION.md](./MATHEMATICAL_VERIFICATION.md)
 - **Agentic AI Workflow & OWASP Vetting Log:** [AI_USAGE.md](./AI_USAGE.md)
 
 ---
 
-## Team Roster (University of Makati — CCIS)
+## Team Roster (University of Makati â€” CCIS)
 
 | Member | Role |
 | :--- | :--- |
@@ -27,10 +28,10 @@ An interactive Quantitative Modeling and Simulation (QMODSIM) single-page web ap
 
 ## Core Interface Architecture
 
-1. **SCENARIOS** — Three narrative-driven Old Yorker's operational & security crisis walkthroughs (*Guadalupe Nuevo Dinner Rush Saturation*, *Fake GCash Receipts & Bun/Beef Shrinkage*, *Multi-Branch Shrinkage & RA 10173 Risk*) with live decision forks that mutate parameters in `src/engines/` and recalculate before-vs-after telemetry graphs.
-2. **LAB** — Multi-variable stochastic workbench featuring a **5-branch switcher** (Guadalupe Nuevo, Bangkal, Taguig, Cainta, Davao), strictly clamped domain sliders (`λ, μ, c, K, τ_crit`), four theme-reactive 60 FPS HTML5 Canvases, Web Worker 10,000-trial FAIR Monte Carlo simulation, and Web Crypto CSPRNG token generator.
-3. **CODEX** — Formal mathematical derivations in clean Unicode typography (zero raw LaTeX) and Philippine statutory compliance crosswalk (**RA 10173**, **RA 8792**, **RA 10175**, **BIR/DTI**).
-4. **In-App Verification & Validation Drawer** — Live mathematical invariant suite accessible from the top navigation bar confirming Poisson arrival convergence, Little's Law conservation, Markov row-stochasticity, FAIR Monte Carlo convergence, BOM Z-score spike recall, and failover reliability dominance.
+1. **SCENARIOS** â€” Three narrative-driven Old Yorker's operational & security crisis walkthroughs (*Guadalupe Nuevo Dinner Rush Saturation*, *Fake GCash Receipts & Bun/Beef Shrinkage*, *Multi-Branch Shrinkage & RA 10173 Risk*) with live decision forks that mutate parameters in `src/engines/` and recalculate before-vs-after telemetry graphs.
+2. **LAB** â€” Multi-variable stochastic workbench featuring a **5-branch switcher** (Guadalupe Nuevo, Bangkal, Taguig, Cainta, Davao), strictly clamped domain sliders (`Î», Î¼, c, K, Ï„_crit`), four theme-reactive 60 FPS HTML5 Canvases, Web Worker 10,000-trial FAIR Monte Carlo simulation, and Web Crypto CSPRNG token generator.
+3. **CODEX** â€” Formal mathematical derivations in clean Unicode typography (zero raw LaTeX) and Philippine statutory compliance crosswalk (**RA 10173**, **RA 8792**, **RA 10175**, **BIR/DTI**).
+4. **In-App Verification & Validation Drawer** â€” Live mathematical invariant suite accessible from the top navigation bar confirming Poisson arrival convergence, Little's Law conservation, Markov row-stochasticity, FAIR Monte Carlo convergence, BOM Z-score spike recall, and failover reliability dominance.
 
 ---
 
@@ -41,7 +42,7 @@ An interactive Quantitative Modeling and Simulation (QMODSIM) single-page web ap
 | **Modules 1 & 3:** Stochastic Processes & Arrival Rates | 12:00 PM Lunch, 3:30 PM Merienda & 7:00 PM Dinner order surges across 5 branches | `src/engines/arrivals.ts` |
 | **Modules 2 & 10:** Security Modeling & Information Entropy | 4-digit branch PIN vs. RBAC session & GCash webhook HMAC tokens | `src/engines/entropy.ts` |
 | **Module 4:** Monte Carlo & FAIR Risk Framework | Fake GCash receipts, raw ingredient shrinkage, stockouts & RA 10173 fines | `src/engines/fairMonteCarlo.ts` + `src/workers/fairWorker.ts` |
-| **Module 5:** Markov Chains & State Dynamics | Order ticket lifecycle (`Cart → GCash Verify → Kitchen Prep → Fulfilled / Drop`) | `src/engines/markov.ts` |
+| **Module 5:** Markov Chains & State Dynamics | Order ticket lifecycle (`Cart â†’ GCash Verify â†’ Kitchen Prep â†’ Fulfilled / Drop`) | `src/engines/markov.ts` |
 | **Module 6:** Queueing Theory (`M/M/c/K`) | Kitchen grill/prep stations (`c`) & active order ticket rail (`K`) | `src/engines/queueing.ts` |
 | **Module 7:** Game Theory in Retail Defense | Owner/Branch Manager inventory audits vs. shrinkage & receipt fraud | `src/engines/gameTheory.ts` |
 | **Module 11:** ML Anomaly Detection in Logs | Zero-allocation streaming Z-score detector on BOM hotdog bun/beef deductions | `src/engines/anomaly.ts` |
@@ -64,7 +65,7 @@ npm run build      # Production bundle for Vercel (dist/)
 ## QMODSIM Final Release Checklist
 
 - [x] **Architectural Separation:** All QMODSIM equations reside in pure TypeScript modules under `src/engines/`, decoupled from React hooks (`src/hooks/`) and UI views (`src/views/`).
-- [x] **Three-Archetype Completeness:** `SCENARIOS`, `LAB`, and `CODEX` are functional, interactive, and grounded in Old Yorker's Chapters 1–2 proposal.
+- [x] **Three-Archetype Completeness:** `SCENARIOS`, `LAB`, and `CODEX` are functional, interactive, and grounded in Old Yorker's Chapters 1â€“2 proposal.
 - [x] **Dual-Theme & Unicode Polish:** Persistent Light/Dark toggle works across all 4 HTML5 Canvases, with zero raw LaTeX syntax in DOM or Canvas.
 - [x] **In-App Mathematical Verification:** All 6 live invariant checks (Poisson, Little's Law, Markov row-stochasticity, FAIR convergence, BOM Z-score recall, reliability dominance) pass inside the Verification Drawer.
 - [x] **Security & Skill Audit:** Zero `dangerouslySetInnerHTML`, `eval`, or `Math.random` token generation; unbiased Web Crypto CSPRNG (`crypto.getRandomValues()`) and OWASP Agentic Top 10 vetting documented in [AI_USAGE.md](./AI_USAGE.md).
