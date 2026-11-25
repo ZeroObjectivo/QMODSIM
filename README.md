@@ -58,14 +58,3 @@ npm test           # Run Vitest mathematical engine unit suite (12/12 tests)
 npm run typecheck  # Strict TypeScript verification (tsc --noEmit)
 npm run build      # Production bundle for Vercel (dist/)
 ```
-
----
-
-## QMODSIM Final Release Checklist
-
-- [x] **Architectural Separation:** All QMODSIM equations reside in pure TypeScript modules under `src/engines/`, decoupled from React hooks (`src/hooks/`) and UI views (`src/views/`).
-- [x] **Three-Archetype Completeness:** `SCENARIOS`, `LAB`, and `CODEX` are functional, interactive, and grounded in Old Yorker's Chapters 1–2 proposal.
-- [x] **Dual-Theme & Unicode Polish:** Persistent Light/Dark toggle works across all 4 HTML5 Canvases, with zero raw LaTeX syntax in DOM or Canvas.
-- [x] **In-App Mathematical Verification:** All 6 live invariant checks (Poisson, Little's Law, Markov row-stochasticity, FAIR convergence, BOM Z-score recall, reliability dominance) pass inside the Verification Drawer.
-- [x] **Security & Skill Audit:** Zero `dangerouslySetInnerHTML`, `eval`, or `Math.random` token generation; unbiased Web Crypto CSPRNG (`crypto.getRandomValues()`) and OWASP Agentic Top 10 vetting documented in [AI_USAGE.md](./AI_USAGE.md).
-- [x] **GitHub & Vercel Readiness:** Conventional commits on `main`, `vercel.json` configured, and verified `npm test` + `npm run build`.
