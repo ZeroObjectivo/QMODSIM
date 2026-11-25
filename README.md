@@ -60,20 +60,6 @@ npm run build      # Production bundle for Vercel (dist/)
 
 ---
 
-## Deploying Manually to Vercel
-
-This repository is pre-configured with [`vercel.json`](./vercel.json) (Vite framework preset, SPA rewrites, and HTTP security headers):
-
-1. Push the `main` branch to `https://github.com/ZeroObjectivo/QMODSIM`.
-2. Open [vercel.com/new](https://vercel.com/new) and import `ZeroObjectivo/QMODSIM`.
-3. Confirm settings (auto-detected from `vercel.json`):
-   - **Framework Preset:** Vite
-   - **Build Command:** `npm run build`
-   - **Output Directory:** `dist`
-4. Click **Deploy**, then copy the resulting live URL into the top of this `README.md`.
-
----
-
 ## QMODSIM Final Release Checklist
 
 - [x] **Architectural Separation:** All QMODSIM equations reside in pure TypeScript modules under `src/engines/`, decoupled from React hooks (`src/hooks/`) and UI views (`src/views/`).
