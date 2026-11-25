@@ -4,7 +4,7 @@ An interactive Quantitative Modeling and Simulation (QMODSIM) single-page web ap
 
 - **GitHub Repository:** [https://github.com/ZeroObjectivo/QMODSIM](https://github.com/ZeroObjectivo/QMODSIM)
 - **Old Yorker's Production Storefront:** [https://old-yorkers.vercel.app/](https://old-yorkers.vercel.app/)
-- **QMODSIM Live Deployment (Vercel):** *(Add your live `.vercel.app` URL here after importing this repo in Vercel)*
+- **QMODSIM Live Deployment (Vercel):** *[(Add your live `.vercel.app` URL here after importing this repo in Vercel)](https://old-yorkers-qmodsim.vercel.app/)*
 - **Capstone Proposal (Chapters 1–2 Summary):** [PROPOSAL.md](./PROPOSAL.md)
 - **Technical Specification:** [SPEC.md](./SPEC.md)
 - **Design System:** [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md)
