@@ -8,6 +8,7 @@ An interactive Quantitative Modeling and Simulation (QMODSIM) single-page web ap
 - **Capstone Proposal (Chapters 1–2 Summary):** [PROPOSAL.md](./PROPOSAL.md)
 - **Technical Specification:** [SPEC.md](./SPEC.md)
 - **Design System:** [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md)
+- **Security & Skill Audit Report:** [SECURITY_AUDIT.md](./SECURITY_AUDIT.md)
 - **Agentic AI Workflow & OWASP Vetting Log:** [AI_USAGE.md](./AI_USAGE.md)
 
 ---
